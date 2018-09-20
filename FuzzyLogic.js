@@ -102,9 +102,3 @@ function createObjects() {
 	}
 	console.table(objects);
 }
-
-function recursiveObjects(noc) {
-	if(noc > 0) {
-
-	}
-}

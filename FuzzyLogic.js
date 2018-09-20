@@ -1,4 +1,4 @@
-var canvas, textOut, input, submitButton;
+var canvas, textOut, input, input2, input3, submitButton;
 
 var numOfValues = 3;
 var numOfCriteria;
@@ -6,18 +6,18 @@ var criIndex;
 var values = [];
 var objects = [];
 var numOfObjects;
-var objectPairs = []
+var objectPairs = {};
 var colors = [];
-
-
+var diagHeight;
 
 function setup() {
 	criIndex = 0;
+	diagHeight = window.innerHeight / 3;
 
 	// Tablica kolorów lini na wykresach
 	colors.push([100, 50, 120]);
-	colors.push([140, 125, 200]);
 	colors.push([80, 170, 100]);
+	colors.push([140, 125, 200]);
 
 	canvas = createCanvas(window.innerWidth, window.innerHeight - 100);
 	canvas.position(0, 100);
@@ -36,6 +36,7 @@ function setup() {
 
 function subCriteria() {
 	numOfCriteria = input.value();
+	input.remove();
 
 	input = createInput();
 	input.position(20, 65);
@@ -61,6 +62,9 @@ function addToValues() {
 
 		values.push(tmpTab);
 		criIndex++;
+		input.remove();
+		input2.remove();
+		input3.remove();
 
 		input = createInput();
 		input.position(20, 65);
@@ -73,8 +77,14 @@ function addToValues() {
 		if(values.length < numOfCriteria) {
 			textOut.html("Podaj wartosci kryterium nr " + (criIndex + 1));
 		} else {
+			input.remove();
+			input2.remove();
+			input3.remove();
+			submitButton.position(120, 65)
+
 			textOut.html("Wcisnij 'submit' by kontynuowac");
 			submitButton.mousePressed(createObjects);
+
 			drawTriangles();
 		}
 	}
@@ -83,7 +93,6 @@ function addToValues() {
 
 function drawTriangles() {
 	let diagWidth = window.innerWidth / numOfCriteria;
-	let diagHeight = 200;
 
 	// Granica pola wykresów
 	noStroke();
@@ -99,7 +108,7 @@ function drawTriangles() {
 		line(14 + i * diagWidth, 0, 14 + i * diagWidth, diagHeight);
 		
 		// Wartości na wykresie - OY
-		stroke(0);
+		noStroke();
 		fill(100);
 		textAlign(LEFT);
 		text("1", 5 + i * diagWidth, 11);
@@ -125,7 +134,7 @@ function drawTriangles() {
 		line(middleX * diagWidth + (i * diagWidth), diagHeight, diagWidth + i * diagWidth, 0);
 
 		// Wartości na wykresie - OX
-		stroke(0);
+		noStroke();
 		fill(100);
 		textAlign(LEFT);
 		textSize(10);
@@ -139,6 +148,7 @@ function drawTriangles() {
 
 function createObjects() {
 	textOut.html("Zaczekaj...");
+	submitButton.remove();
 
 	// Tworzenie tablicy obiektów charakterystycznych 'objects'
 	numOfObjects = Math.pow(numOfValues, numOfCriteria);
@@ -168,10 +178,54 @@ function createObjects() {
 	console.table(objects);
 
 	// Tworzenie par obiektów charakterystycznych
-	for(let i = 0; i < objects.length; i++) {
-		for(let j = 0; j < objects.length; j++) {
-			objectPairs.push([objects[i], objects[j]]);
+	objectPairs.data = [];
+	objectPairs.index = [];
+	for(let i = 0; i < objects.length - 1; i++) {
+		for(let j = i + 1; j < objects.length; j++) {
+			objectPairs.data.push([objects[i], objects[j]]);
+			objectPairs.index.push([i, j]);
 		}
 	}
-	console.table(objectPairs);
+
+	// Porównywanie par
+	textOut.html("Porownaj pary");
+
+	stroke(120);
+	fill(225);
+	rect(window.innerWidth / 2 - 100, diagHeight + 16, 200, 50 * numOfCriteria + 5);
+
+	let pairNum = 0;
+	while(pairNum < objectPairs.data.length) {
+
+		// Lewa
+		textAlign(LEFT);
+		noStroke();
+		fill(0);
+		for(let i = 0; i < numOfCriteria; i++) {
+			text("kryterium " + (i+1) + ":", window.innerWidth / 2 - 95, diagHeight + 50 * i + 30);
+			text(objectPairs.data[pairNum][0][i], window.innerWidth / 2 - 85, diagHeight + (i + 1) * 50 + 5);
+		}
+
+		// Prawa
+		textAlign(RIGHT);
+		for(let i = 0; i < numOfCriteria; i++) {
+			text("kryterium " + (i+1) + ":", window.innerWidth / 2 + 95, diagHeight + 50 * i + 30);
+			text(objectPairs.data[pairNum][1][i], window.innerWidth / 2 + 85, diagHeight + (i + 1) * 50 + 5);
+		}
+
+		// Licznik
+		textAlign(CENTER);
+		text("para:\n" + (pairNum+1) + "/" + objectPairs.data.length, window.innerWidth / 2, diagHeight + 30);
+		
+		// Przyciski
+		leftButton = createButton("wybierz lewy");
+		rightButton = createButton("wybierz prawy");
+		tieButton = createButton("remis");
+
+		leftButton.position(window.innerWidth / 2 - window.innerWidth / 5 + 25, diagHeight + 116 + window.innerHeight / 20);
+		tieButton.position(window.innerWidth / 2 - window.innerWidth / 50, diagHeight + 116 + window.innerHeight / 20);
+		rightButton.position(window.innerWidth / 2 + window.innerWidth / 11 + 3, diagHeight + 116 + window.innerHeight / 20);
+
+		break;
+	}
 }

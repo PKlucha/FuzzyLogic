@@ -4,13 +4,20 @@ var numOfValues = 3;
 var numOfCriteria;
 var criIndex;
 var values = [];
-var objects;
+var objects = [];
 var numOfObjects;
+var objectPairs = []
+var colors = [];
 
-var recursionIndex = 0;
+
 
 function setup() {
 	criIndex = 0;
+
+	// Tablica kolorów lini na wykresach
+	colors.push([100, 50, 120]);
+	colors.push([140, 125, 200]);
+	colors.push([80, 170, 100]);
 
 	canvas = createCanvas(window.innerWidth, window.innerHeight - 100);
 	canvas.position(0, 100);
@@ -68,15 +75,73 @@ function addToValues() {
 		} else {
 			textOut.html("Wcisnij 'submit' by kontynuowac");
 			submitButton.mousePressed(createObjects);
+			drawTriangles();
 		}
 	}
 	console.table(values);
 }
 
+function drawTriangles() {
+	let diagWidth = window.innerWidth / numOfCriteria;
+	let diagHeight = 200;
+
+	// Granica pola wykresów
+	noStroke();
+	fill(225);
+	rect(0, 0, window.innerWidth, diagHeight + 14);
+
+	stroke(200, 25, 30);
+	line(0, diagHeight, window.innerWidth, diagHeight);
+
+	for(let i = 0; i < numOfCriteria; i++) {
+		// Separator wykresów
+		stroke(200, 25, 30);
+		line(14 + i * diagWidth, 0, 14 + i * diagWidth, diagHeight);
+		
+		// Wartości na wykresie - OY
+		stroke(0);
+		fill(100);
+		textAlign(LEFT);
+		text("1", 5 + i * diagWidth, 11);
+		text("0", 5 + i * diagWidth, diagHeight - 2);
+	}
+	strokeWeight(2);
+	for(let i = 0; i < numOfCriteria; i++) {
+		// Stosunek wartości środkowej do długości wykresu
+		let middleX = Math.abs(values[i][0] - values[i][1]) / (values[i][2] - values[i][0]);
+
+		// Od lewej...
+		// Pierwszy trójkąt
+		stroke(colors[0][0], colors[0][1], colors[0][2]);
+		line(15 + (i * diagWidth), 0, middleX * diagWidth + (i * diagWidth), diagHeight);
+
+		// Drugi trójkąt
+		stroke(colors[1][0], colors[1][1], colors[1][2]);
+		line(15 + (i * diagWidth), diagHeight, middleX * diagWidth + (i * diagWidth), 0);
+		line(middleX * diagWidth + (i * diagWidth), 0, diagWidth + i * diagWidth, diagHeight);
+
+		// Trzeci trójkąt
+		stroke(colors[2][0], colors[2][1], colors[2][2]);
+		line(middleX * diagWidth + (i * diagWidth), diagHeight, diagWidth + i * diagWidth, 0);
+
+		// Wartości na wykresie - OX
+		stroke(0);
+		fill(100);
+		textAlign(LEFT);
+		textSize(10);
+		text(values[i][0], 18 + i * diagWidth, diagHeight + 12);
+		textAlign(CENTER);
+		text(values[i][1], middleX * diagWidth + (i * diagWidth), diagHeight + 12);
+		textAlign(RIGHT);
+		text(values[i][2], diagWidth + i * diagWidth - 3, diagHeight + 12);
+	}
+}
+
 function createObjects() {
 	textOut.html("Zaczekaj...");
+
+	// Tworzenie tablicy obiektów charakterystycznych 'objects'
 	numOfObjects = Math.pow(numOfValues, numOfCriteria);
-	objects = [];
 
 	// Tablica indeksów, na początku zera
 	let indexes = [];
@@ -101,4 +166,12 @@ function createObjects() {
 		}
 	}
 	console.table(objects);
+
+	// Tworzenie par obiektów charakterystycznych
+	for(let i = 0; i < objects.length; i++) {
+		for(let j = 0; j < objects.length; j++) {
+			objectPairs.push([objects[i], objects[j]]);
+		}
+	}
+	console.table(objectPairs);
 }

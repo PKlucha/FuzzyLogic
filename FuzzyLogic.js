@@ -1,4 +1,4 @@
-var canvas, textOut, input, input2, input3, submitButton;
+var canvas, textOut, input, input2, input3, submitButton, leftButton, tieButton, rightButton;
 
 var numOfValues = 3;
 var numOfCriteria;
@@ -10,8 +10,17 @@ var objectPairs = {};
 var colors = [];
 var diagHeight;
 
+var CHOOSING = false;
+var pairNum;
+var MEJ;
+var SJ = {};
+var P;
+
 function setup() {
+	noLoop();
+
 	criIndex = 0;
+	pairNum = 0;
 	diagHeight = window.innerHeight / 3;
 
 	// Tablica kolorów lini na wykresach
@@ -34,6 +43,22 @@ function setup() {
 	submitButton.mousePressed(subCriteria);
 }
 
+// W draw() jest porównywanie par obiektów charakterystycznych (draw() to drawing loop)
+function draw() {
+	if(CHOOSING === true && pairNum < objectPairs.data.length) {
+		choosePairs();
+		CHOOSING = false;
+	} else if(objectPairs.data !== undefined && pairNum >= objectPairs.data.length) { // Porządki po ocenianiu par
+		leftButton.remove();
+		tieButton.remove();
+		rightButton.remove();
+
+		sumMEJ();
+	}
+	noLoop();
+}
+
+// Pierwsze pobranie wartości kryteriów od użytkownika 
 function subCriteria() {
 	numOfCriteria = input.value();
 	input.remove();
@@ -53,6 +78,8 @@ function subCriteria() {
 	textOut.html("Podaj wartosci kryterium nr " + (criIndex + 1));
 }
 
+
+// Pobieranie wartości cd.
 function addToValues() {
 	if(values.length < numOfCriteria) {
 		let tmpTab = new Array(numOfValues);
@@ -91,6 +118,7 @@ function addToValues() {
 	console.table(values);
 }
 
+// Rysowanie wykresów
 function drawTriangles() {
 	let diagWidth = window.innerWidth / numOfCriteria;
 
@@ -146,6 +174,7 @@ function drawTriangles() {
 	}
 }
 
+// Where the magic begins...
 function createObjects() {
 	textOut.html("Zaczekaj...");
 	submitButton.remove();
@@ -159,6 +188,7 @@ function createObjects() {
 		indexes.push(0);
 	}
 
+	// Mechanizm jak w mechanicznym zegarku
 	while(objects.length !== numOfObjects) {
 		let tmpTab = [];
 		for(let i = 0; i < numOfCriteria; i++) {
@@ -167,6 +197,7 @@ function createObjects() {
 
 		objects.push(tmpTab);
 
+		// Przestawianie indeksów jak w zegarku - sekundy%60 = 0, minuty++
 		indexes[indexes.length - 1]++;
 		for(let j = indexes.length - 1; j >= 0; j--)	{
 			if(indexes[j] > numOfValues - 1) {
@@ -190,42 +221,122 @@ function createObjects() {
 	// Porównywanie par
 	textOut.html("Porownaj pary");
 
+	// Przyciski
+	leftButton = createButton("wybierz lewy");
+	tieButton = createButton("remis");
+	rightButton = createButton("wybierz prawy");
+
+	tieButton.position(window.innerWidth / 2 - window.innerWidth / 50, diagHeight + 116 + 50 * numOfCriteria + 5);
+	leftButton.position(tieButton.x - window.innerWidth / 12, diagHeight + 116 + 50 * numOfCriteria + 5);
+
+	rightButton.position(tieButton.x + window.innerWidth / 20, diagHeight + 116 + 50 * numOfCriteria + 5);
+
+	leftButton.mousePressed(leftButtonFunc);
+	tieButton.mousePressed(tieButtonFunc);
+	rightButton.mousePressed(rightButtonFunc);
+	
+	// Alokowanie pamięci dla tablicy MEJ
+	MEJ = new Array(numOfObjects);
+	for(let i = 0; i < numOfObjects; i++) {
+		MEJ[i] = new Array(numOfObjects);
+		for(let j = 0; j < numOfObjects; j++) {
+			if(i === j) {
+				MEJ[i][j] = 0.5; // Na głównej przekątnej zawsze remis (ten sam obiekt)
+			}
+		}
+	}
+
+	choosePairs();
+}
+
+// Pierwsze wyświetlenie interfejsu wyboru
+function choosePairs() {
 	stroke(120);
 	fill(225);
 	rect(window.innerWidth / 2 - 100, diagHeight + 16, 200, 50 * numOfCriteria + 5);
 
-	let pairNum = 0;
-	while(pairNum < objectPairs.data.length) {
-
-		// Lewa
-		textAlign(LEFT);
-		noStroke();
-		fill(0);
-		for(let i = 0; i < numOfCriteria; i++) {
-			text("kryterium " + (i+1) + ":", window.innerWidth / 2 - 95, diagHeight + 50 * i + 30);
-			text(objectPairs.data[pairNum][0][i], window.innerWidth / 2 - 85, diagHeight + (i + 1) * 50 + 5);
-		}
-
-		// Prawa
-		textAlign(RIGHT);
-		for(let i = 0; i < numOfCriteria; i++) {
-			text("kryterium " + (i+1) + ":", window.innerWidth / 2 + 95, diagHeight + 50 * i + 30);
-			text(objectPairs.data[pairNum][1][i], window.innerWidth / 2 + 85, diagHeight + (i + 1) * 50 + 5);
-		}
-
-		// Licznik
-		textAlign(CENTER);
-		text("para:\n" + (pairNum+1) + "/" + objectPairs.data.length, window.innerWidth / 2, diagHeight + 30);
-		
-		// Przyciski
-		leftButton = createButton("wybierz lewy");
-		rightButton = createButton("wybierz prawy");
-		tieButton = createButton("remis");
-
-		leftButton.position(window.innerWidth / 2 - window.innerWidth / 5 + 25, diagHeight + 116 + window.innerHeight / 20);
-		tieButton.position(window.innerWidth / 2 - window.innerWidth / 50, diagHeight + 116 + window.innerHeight / 20);
-		rightButton.position(window.innerWidth / 2 + window.innerWidth / 11 + 3, diagHeight + 116 + window.innerHeight / 20);
-
-		break;
+	// Lewa
+	textAlign(LEFT);
+	noStroke();
+	fill(0);
+	for(let i = 0; i < numOfCriteria; i++) {
+		text("kryterium " + (i+1) + ":", window.innerWidth / 2 - 95, diagHeight + 50 * i + 30);
+		text(objectPairs.data[pairNum][0][i], window.innerWidth / 2 - 85, diagHeight + (i + 1) * 50 + 5);
 	}
+
+	// Prawa
+	textAlign(RIGHT);
+	for(let i = 0; i < numOfCriteria; i++) {
+		text("kryterium " + (i+1) + ":", window.innerWidth / 2 + 95, diagHeight + 50 * i + 30);
+		text(objectPairs.data[pairNum][1][i], window.innerWidth / 2 + 85, diagHeight + (i + 1) * 50 + 5);
+	}
+
+	// Licznik
+	textAlign(CENTER);
+	text("para:\n" + (pairNum+1) + "/" + objectPairs.data.length, window.innerWidth / 2, diagHeight + 30);
+
+
+}
+
+// Funkcje obsługujące przyciski wyboru
+function leftButtonFunc() {
+	MEJ[objectPairs.index[pairNum][0]][objectPairs.index[pairNum][1]] = 1;
+	MEJ[objectPairs.index[pairNum][1]][objectPairs.index[pairNum][0]] = 0;
+	console.table(MEJ);
+
+	pairNum++;
+	CHOOSING = true;
+	loop();
+}
+
+function tieButtonFunc() {
+	MEJ[objectPairs.index[pairNum][0]][objectPairs.index[pairNum][1]] = 0.5;
+	MEJ[objectPairs.index[pairNum][1]][objectPairs.index[pairNum][0]] = 0.5;
+	console.table(MEJ);
+
+	pairNum++;
+	CHOOSING = true;
+	loop();
+}
+
+function rightButtonFunc() {
+	MEJ[objectPairs.index[pairNum][0]][objectPairs.index[pairNum][1]] = 0;
+	MEJ[objectPairs.index[pairNum][1]][objectPairs.index[pairNum][0]] = 1;
+	console.table(MEJ);
+
+	pairNum++;
+	CHOOSING = true;
+	loop();
+}
+
+// Sumowanie i sortowanie tablicy MEJ (wektory SJ i P), in progress 
+function sumMEJ() {
+	let SJ = new Array(numOfObjects);
+	
+
+	for(let i = 0; i < numOfObjects; i++) {
+		SJ[i] = 0;
+		for(let j = 0; j < numOfObjects; j++) {
+			SJ[i] += MEJ[i][j];
+		}
+	}
+	console.log("SJ:");
+	console.table(SJ);
+
+
+
+	// Sortowanie SJ - bubble sort
+	for(let i = 0; i < numOfObjects; i++) {
+		let tmp = 0;
+		for(let j = 0; j < numOfObjects - 1; j++) {
+			if(SJ[j] < SJ[j+1]) {
+				tmp = SJ[j];
+				SJ[j] = SJ[j+1];
+				SJ[j+1] = tmp;
+			}
+		}
+	}
+
+	// Wektor P jako ranking obiektów na podstawie SJ
+	// Do bubble sorta zamiast SJ dać jego kompie - wektor P
 }
